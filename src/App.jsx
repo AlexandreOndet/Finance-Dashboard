@@ -8,6 +8,7 @@ import { DEFAULT_PORTFOLIOS } from './data/catalog.js';
 import { Icon } from './components/icons.jsx';
 import { Segmented } from './components/ui.jsx';
 import { useMarketData } from './market/useMarketData.js';
+import { useIsMobile } from './hooks/useViewport.js';
 import { ViewOverview } from './views/Overview.jsx';
 import { ViewPortfolio } from './views/Portfolio.jsx';
 import { ViewData } from './views/Data.jsx';
@@ -30,8 +31,9 @@ function NavItem({ icon, label, active, onClick, indent }) {
   );
 }
 
-function Sidebar() {
+function SidebarPanel({ onClose }) {
   const { tk, lang, route, setRoute, portfolios } = useApp();
+  const go = (r) => { setRoute(r); if (onClose) onClose(); };
   return (
     <div style={{ width: 250, flexShrink: 0, background: tk.panel, borderRight: '1px solid ' + tk.line, display: 'flex', flexDirection: 'column', height: '100%', padding: '22px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 8px 22px' }}>
@@ -42,17 +44,29 @@ function Sidebar() {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <NavItem icon="overview" label={t(lang, 'nav_overview')} active={route.name === 'overview'} onClick={() => setRoute({ name: 'overview' })} />
+        <NavItem icon="overview" label={t(lang, 'nav_overview')} active={route.name === 'overview'} onClick={() => go({ name: 'overview' })} />
         <div style={{ fontFamily: FONTS.body, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: tk.faint, padding: '14px 12px 6px' }}>{t(lang, 'nav_accounts')}</div>
         {portfolios.map((p) => (
-          <NavItem key={p.id} indent label={acctLabel(lang, p.type)} active={route.name === 'account' && route.id === p.id} onClick={() => setRoute({ name: 'account', id: p.id })} />
+          <NavItem key={p.id} indent label={acctLabel(lang, p.type)} active={route.name === 'account' && route.id === p.id} onClick={() => go({ name: 'account', id: p.id })} />
         ))}
         <div style={{ height: 10 }} />
-        <NavItem icon="data" label={t(lang, 'nav_data')} active={route.name === 'data'} onClick={() => setRoute({ name: 'data' })} />
+        <NavItem icon="data" label={t(lang, 'nav_data')} active={route.name === 'data'} onClick={() => go({ name: 'data' })} />
       </div>
       <div style={{ flex: 1 }} />
       <div style={{ fontFamily: FONTS.body, fontSize: 11, color: tk.faint, padding: '0 10px' }}>{t(lang, 'asOf')}</div>
     </div>
+  );
+}
+
+function Sidebar({ isMobile, open, onClose }) {
+  if (!isMobile) return <SidebarPanel />;
+  return (
+    <>
+      {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(20,14,8,.45)', backdropFilter: 'blur(2px)' }} />}
+      <div style={{ position: 'fixed', left: 0, top: 0, height: '100%', zIndex: 90, boxShadow: open ? '0 0 40px rgba(0,0,0,.25)' : 'none', transform: open ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .22s ease' }}>
+        <SidebarPanel onClose={onClose} />
+      </div>
+    </>
   );
 }
 
@@ -67,32 +81,41 @@ function IconButton({ icon, onClick, title, badge }) {
   );
 }
 
-function Topbar({ onOpenSettings }) {
-  const { tk, lang, disp, setDisp, setLang, mode, setMode, market } = useApp();
+function Topbar({ onOpenSettings, onOpenNav }) {
+  const { tk, lang, disp, setDisp, setLang, mode, setMode, market, isMobile } = useApp();
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, padding: '16px 34px', borderBottom: '1px solid ' + tk.line, background: tk.bg, position: 'sticky', top: 0, zIndex: 20 }}>
-      <Segmented size="sm" value={disp} onChange={setDisp} options={[{ value: 'CAD', label: 'CAD' }, { value: 'USD', label: 'USD' }]} />
-      <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: 'en', label: 'EN' }, { value: 'fr', label: 'FR' }]} />
-      <IconButton icon="settings" title={t(lang, 'settings')} onClick={onOpenSettings} badge={!market.configured} />
-      <IconButton icon={mode === 'dark' ? 'sun' : 'moon'} title={t(lang, 'theme')} onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} />
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: isMobile ? 'space-between' : 'flex-end', gap: isMobile ? 8 : 12, padding: isMobile ? '12px 16px' : '16px 34px', borderBottom: '1px solid ' + tk.line, background: tk.bg, position: 'sticky', top: 0, zIndex: 20 }}>
+      {isMobile && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <IconButton icon="menu" title={t(lang, 'nav_overview')} onClick={onOpenNav} />
+          <span style={{ fontFamily: FONTS.disp, fontSize: 16, fontWeight: 700, color: tk.ink, letterSpacing: -0.3 }}>{t(lang, 'appTitle')}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
+        <Segmented size="sm" value={disp} onChange={setDisp} options={[{ value: 'CAD', label: 'CAD' }, { value: 'USD', label: 'USD' }]} />
+        <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: 'en', label: 'EN' }, { value: 'fr', label: 'FR' }]} />
+        <IconButton icon="settings" title={t(lang, 'settings')} onClick={onOpenSettings} badge={!market.configured} />
+        <IconButton icon={mode === 'dark' ? 'sun' : 'moon'} title={t(lang, 'theme')} onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} />
+      </div>
     </div>
   );
 }
 
 function Shell() {
-  const { tk, route } = useApp();
+  const { tk, route, isMobile } = useApp();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   let view;
   if (route.name === 'account') view = <ViewPortfolio id={route.id} />;
   else if (route.name === 'data') view = <ViewData />;
   else view = <ViewOverview />;
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', background: tk.bg, overflow: 'hidden' }}>
-      <Sidebar />
+      <Sidebar isMobile={isMobile} open={navOpen} onClose={() => setNavOpen(false)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Topbar onOpenSettings={() => setSettingsOpen(true)} />
+        <Topbar onOpenSettings={() => setSettingsOpen(true)} onOpenNav={() => setNavOpen(true)} />
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <div style={{ maxWidth: 1180, margin: '0 auto', padding: '32px 34px 80px' }}>{view}</div>
+          <div style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '20px 14px 64px' : '32px 34px 80px' }}>{view}</div>
         </div>
       </div>
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
@@ -111,6 +134,7 @@ export default function App() {
   const tk = tokens(mode);
   const ac = assetColor(mode);
   const market = useMarketData();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     try { localStorage.setItem(LS, JSON.stringify({ mode, lang, disp, portfolios, route })); } catch { /* noop */ }
@@ -123,7 +147,7 @@ export default function App() {
 
   const ctx = {
     mode, setMode, lang, setLang, disp, setDisp, portfolios, setPortfolios, route, setRoute, tk, ac,
-    assets: market.assets, fx: market.fx, market,
+    assets: market.assets, fx: market.fx, market, isMobile,
   };
   return <AppCtx.Provider value={ctx}><Shell /></AppCtx.Provider>;
 }

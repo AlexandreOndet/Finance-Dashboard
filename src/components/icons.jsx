@@ -4,6 +4,7 @@ const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLineca
 const paths = {
   overview: <><rect x="3" y="3" width="7" height="7" rx="1.5" {...P} /><rect x="14" y="3" width="7" height="7" rx="1.5" {...P} /><rect x="3" y="14" width="7" height="7" rx="1.5" {...P} /><rect x="14" y="14" width="7" height="7" rx="1.5" {...P} /></>,
   account: <><rect x="3" y="6" width="18" height="13" rx="2.5" {...P} /><path d="M3 10h18" {...P} /><path d="M7 3h10" {...P} /></>,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" {...P} />,
   data: <><rect x="3.5" y="4" width="17" height="16" rx="2" {...P} /><path d="M3.5 9.5h17M9 9.5V20M15 9.5V20" {...P} /></>,
   sun: <><circle cx="12" cy="12" r="4" {...P} /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" {...P} /></>,
   moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5Z" {...P} />,

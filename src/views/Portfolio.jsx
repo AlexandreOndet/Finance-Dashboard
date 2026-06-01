@@ -26,10 +26,51 @@ function HeaderCell({ children, align }) {
   return <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: tk.faint, textAlign: align || 'left' }}>{children}</span>;
 }
 
+// label/value pair used inside the mobile stacked-card rows
+function MStat({ label, value, accent }) {
+  const { tk } = useApp();
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: tk.faint, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: accent || tk.ink, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+    </div>
+  );
+}
+
 function OverviewTable({ p }) {
-  const { tk, lang, disp, assets, fx } = useApp();
+  const { tk, lang, disp, assets, fx, isMobile } = useApp();
   const rows = rebalance(p, disp, assets, fx);
   const cols = '2.4fr 1.1fr 0.8fr 1fr 1.2fr 1.6fr 0.7fr 0.8fr';
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {rows.map((r) => {
+          const a = assets[r.ticker] || ASSETS[r.ticker] || {};
+          const native = curOf(r.ticker, assets);
+          const cash = isCash(r.ticker);
+          return (
+            <Card key={r.ticker} style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <Dot ticker={r.ticker} size={11} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: tk.ink }}>{r.ticker} <span style={{ fontSize: 10.5, fontWeight: 600, color: tk.faint }}>{native}</span></div>
+                  <div style={{ fontSize: 11.5, color: tk.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.klass}</div>
+                </div>
+                <span style={{ fontSize: 12.5 }}><Drift pct={r.driftPct} /></span>
+              </div>
+              <TargetBar actual={r.curPct} target={r.target} color={assetColor(tk.mode)(r.ticker)} height={6} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 14px', marginTop: 14 }}>
+                <MStat label={t(lang, 'value')} value={fmtMoney(r.cur, disp, lang, cash ? { maxDecimals: 2 } : undefined)} />
+                <MStat label={t(lang, 'weight')} value={fmtPct(r.curPct, lang, 0)} />
+                <MStat label={t(lang, 'shares')} value={fmtNum(r.shares, lang, 0, cash ? 2 : 0)} />
+                <MStat label={t(lang, 'target')} value={fmtPct(r.target, lang, 0)} />
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <Card style={{ padding: '8px 6px 12px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 14, alignItems: 'center', padding: '14px 22px 12px', borderBottom: '1px solid ' + tk.line2 }}>
@@ -76,7 +117,7 @@ function OverviewTable({ p }) {
 }
 
 function ForecastTable({ p }) {
-  const { tk, lang, disp, assets, fx } = useApp();
+  const { tk, lang, disp, assets, fx, isMobile } = useApp();
   const total = portfolioTotal(p, disp, assets, fx);
   const rows = rebalance(p, disp, assets, fx);
   const trades = rows.filter((r) => Math.abs(r.delta) >= total * 0.005);
@@ -87,6 +128,32 @@ function ForecastTable({ p }) {
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 46, height: 46, borderRadius: 23, background: tk.buySoft, color: tk.buy, marginBottom: 12 }}><Icon name="check" size={24} /></div>
         <div style={{ fontFamily: FD, fontSize: 18, fontWeight: 700, color: tk.ink }}>{t(lang, 'balanced')}</div>
       </Card>
+    );
+  }
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {trades.map((r) => {
+          const buy = r.delta > 0;
+          const cash = isCash(r.ticker);
+          const native = curOf(r.ticker, assets);
+          return (
+            <Card key={r.ticker} style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <Pill kind={buy ? 'buy' : 'sell'}>{cash ? t(lang, buy ? 'toRaise' : 'deploy') : (buy ? t(lang, 'buy') : t(lang, 'sell'))}</Pill>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: tk.ink }}>{r.ticker}</span>
+                </div>
+                <span style={{ fontFamily: FD, fontSize: 16, fontWeight: 700, color: buy ? tk.buy : tk.sell, fontVariantNumeric: 'tabular-nums' }}>{fmtMoneySigned(r.delta, disp, lang, cash ? { maxDecimals: 2 } : undefined)}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: tk.faint, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtPct(r.curPct, lang, 1)} → {fmtPct(r.target, lang, 0)}</span>
+                {!cash && <span style={{ fontVariantNumeric: 'tabular-nums' }}>· {fmtNum(Math.abs(r.sharesDelta), lang, Math.abs(r.sharesDelta) < 10 ? 1 : 0)} {t(lang, 'sharesToTrade')} · {fmtMoney(r.price, native, lang, { decimals: 2 })}</span>}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
     );
   }
   return (
@@ -126,7 +193,7 @@ function ForecastTable({ p }) {
 }
 
 export function ViewPortfolio({ id }) {
-  const { tk, lang, disp, portfolios, setRoute, assets, fx } = useApp();
+  const { tk, lang, disp, portfolios, setRoute, assets, fx, isMobile } = useApp();
   const [forecast, setForecast] = React.useState(false);
   const p = portfolios.find((x) => x.id === id) || portfolios[0];
   const rows = rebalance(p, disp, assets, fx);
@@ -155,10 +222,10 @@ export function ViewPortfolio({ id }) {
       </div>
 
       {/* hero row: donut + stats */}
-      <div style={{ display: 'flex', gap: 22, marginBottom: 22, alignItems: 'stretch', flexWrap: 'wrap' }}>
-        <Card style={{ padding: '26px 30px', display: 'flex', alignItems: 'center', gap: 28, flex: '1 1 380px' }}>
-          <Donut rows={galloc} size={180} stroke={22} label={acctLabel(lang, p.type)} value={fmtMoney(total, disp, lang)} />
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: isMobile ? 16 : 22, marginBottom: 22, alignItems: 'stretch', flexWrap: 'wrap' }}>
+        <Card style={{ padding: isMobile ? '20px 18px' : '26px 30px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: isMobile ? 18 : 28, flex: isMobile ? '1 1 100%' : '1 1 380px' }}>
+          <Donut rows={galloc} size={isMobile ? 140 : 180} stroke={22} label={acctLabel(lang, p.type)} value={fmtMoney(total, disp, lang)} />
+          <div style={{ flex: 1, alignSelf: 'stretch', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {rows.map((r) => (
               <div key={r.ticker} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Dot ticker={r.ticker} />

@@ -20,7 +20,7 @@ function fmtWhen(ts, lang) {
 }
 
 export function Settings({ onClose }) {
-  const { tk, lang, market } = useApp();
+  const { tk, lang, market, isMobile } = useApp();
   const { configured, sheetUrl, loading, error, lastUpdated, fx, setSheetUrl, refresh } = market;
   const [draft, setDraft] = React.useState(sheetUrl || '');
   const [copied, setCopied] = React.useState(false);
@@ -37,9 +37,9 @@ export function Settings({ onClose }) {
 
   return (
     <div onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(20,14,8,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 20px' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(20,14,8,.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: isMobile ? '6vh 12px' : '8vh 20px' }}>
       <div onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 480, background: tk.panel, border: '1px solid ' + tk.line2, borderRadius: 20, boxShadow: tk.shadow, padding: 26 }}>
+        style={{ width: '100%', maxWidth: 480, background: tk.panel, border: '1px solid ' + tk.line2, borderRadius: 20, boxShadow: tk.shadow, padding: isMobile ? 18 : 26 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <span style={{ fontFamily: FD, fontSize: 19, fontWeight: 700, color: tk.ink, letterSpacing: -0.3 }}>{t(lang, 'settings')}</span>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: tk.faint, display: 'flex' }}><Icon name="close" size={20} /></button>

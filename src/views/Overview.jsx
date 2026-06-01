@@ -41,13 +41,13 @@ function HoldingRow({ r, forecast }) {
 }
 
 function AccountTile({ p, forecast }) {
-  const { tk, lang, disp, setRoute, assets, fx } = useApp();
+  const { tk, lang, disp, setRoute, assets, fx, isMobile } = useApp();
   const rows = rebalance(p, disp, assets, fx);
   const total = portfolioTotal(p, disp, assets, fx);
   const dc = dayChange(p, disp, assets, fx);
   const trades = rows.filter((r) => Math.abs(r.delta) >= total * 0.005);
   return (
-    <Card interactive onClick={() => setRoute({ name: 'account', id: p.id })} style={{ padding: '22px 24px' }}>
+    <Card interactive onClick={() => setRoute({ name: 'account', id: p.id })} style={{ padding: isMobile ? '18px' : '22px 24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <div style={{ fontFamily: '"Bricolage Grotesque", sans-serif', fontSize: 20, fontWeight: 700, color: tk.ink, letterSpacing: -0.3 }}>{acctLabel(lang, p.type)}</div>
@@ -68,7 +68,7 @@ function AccountTile({ p, forecast }) {
 }
 
 export function ViewOverview() {
-  const { tk, lang, disp, portfolios, assets, fx } = useApp();
+  const { tk, lang, disp, portfolios, assets, fx, isMobile } = useApp();
   const [forecast, setForecast] = React.useState(false);
   const rows = globalAllocation(portfolios, disp, assets, fx);
   const total = grandTotal(portfolios, disp, assets, fx);
@@ -84,15 +84,17 @@ export function ViewOverview() {
       </div>
 
       {/* hero */}
-      <Card style={{ padding: '30px 34px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 40 }}>
-        <Donut rows={rows} label={t(lang, 'allAccounts')} value={fmtMoney(total, disp, lang)} />
+      <Card style={{ padding: isMobile ? '20px 18px' : '30px 34px', marginBottom: 22, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? 20 : 40 }}>
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+          <Donut rows={rows} size={isMobile ? 150 : 230} label={t(lang, 'allAccounts')} value={fmtMoney(total, disp, lang)} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', color: tk.faint, marginBottom: 8 }}>{t(lang, 'netWorth')}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: '"Bricolage Grotesque", sans-serif', fontSize: 52, fontWeight: 700, letterSpacing: -1.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: tk.ink }}>{fmtMoney(total, disp, lang)}</span>
+            <span style={{ fontFamily: '"Bricolage Grotesque", sans-serif', fontSize: isMobile ? 36 : 52, fontWeight: 700, letterSpacing: -1.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: tk.ink }}>{fmtMoney(total, disp, lang)}</span>
             <span style={{ fontSize: 17, fontWeight: 700, color: dayAbs >= 0 ? tk.buy : tk.sell, fontVariantNumeric: 'tabular-nums' }}>{fmtPctSigned(dayPct, lang, 2)} · {t(lang, 'today')}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '10px' : '12px 32px' }}>
             {rows.map((r) => (
               <div key={r.ticker} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Dot ticker={r.ticker} size={11} />
@@ -106,7 +108,7 @@ export function ViewOverview() {
         </div>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 22 }}>
         {portfolios.map((p) => <AccountTile key={p.id} p={p} forecast={forecast} />)}
       </div>
     </div>

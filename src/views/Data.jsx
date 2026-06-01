@@ -89,7 +89,7 @@ function ImportPanel({ onApply, onClose }) {
 }
 
 export function ViewData() {
-  const { tk, lang, disp, portfolios, setPortfolios, assets, fx } = useApp();
+  const { tk, lang, disp, portfolios, setPortfolios, assets, fx, isMobile } = useApp();
   const [rows, setRows] = React.useState(() => flatten(portfolios));
   const [importing, setImporting] = React.useState(false);
 
@@ -128,22 +128,54 @@ export function ViewData() {
 
       {importing && <ImportPanel onApply={applyImport} onClose={() => setImporting(false)} />}
 
-      <Card style={{ padding: '8px 6px 14px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12, alignItems: 'center', padding: '14px 20px 12px', borderBottom: '1px solid ' + tk.line2 }}>
-          {[t(lang, 'portfolio'), t(lang, 'asset'), t(lang, 'shares'), t(lang, 'price'), t(lang, 'value'), t(lang, 'targetPct'), ''].map((h, i) => (
-            <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: tk.faint, textAlign: i >= 2 && i <= 5 ? 'right' : 'left' }}>{h}</span>
-          ))}
-        </div>
+      <Card style={{ padding: isMobile ? '6px 0 12px' : '8px 6px 14px' }}>
+        {!isMobile && (
+          <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12, alignItems: 'center', padding: '14px 20px 12px', borderBottom: '1px solid ' + tk.line2 }}>
+            {[t(lang, 'portfolio'), t(lang, 'asset'), t(lang, 'shares'), t(lang, 'price'), t(lang, 'value'), t(lang, 'targetPct'), ''].map((h, i) => (
+              <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: tk.faint, textAlign: i >= 2 && i <= 5 ? 'right' : 'left' }}>{h}</span>
+            ))}
+          </div>
+        )}
         {rows.map((r) => {
           const tkr = (r.ticker || '').toUpperCase();
           const a = assets[tkr];
           const cash = isCash(tkr);
           const native = a ? curOf(tkr, assets) : null;
           const val = a ? holdingValue({ ticker: tkr, shares: parseFloat(r.shares) || 0 }, disp, assets, fx) : null;
+          const selStyle = { fontFamily: FB, fontSize: 13.5, fontWeight: 600, color: tk.ink, background: tk.inset, border: '1px solid ' + tk.line, borderRadius: 9, padding: '8px 10px', outline: 'none', cursor: 'pointer' };
+          const delBtn = (
+            <button onClick={() => removeRow(r.uid)} title={t(lang, 'remove')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: tk.faint, display: 'flex', justifyContent: 'center', padding: 6, borderRadius: 8 }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = tk.sell; e.currentTarget.style.background = tk.sellSoft; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = tk.faint; e.currentTarget.style.background = 'transparent'; }}><Icon name="trash" size={16} /></button>
+          );
+          const lbl = { fontSize: 10.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: tk.faint, marginBottom: 4 };
+          if (isMobile) {
+            return (
+              <div key={r.uid} style={{ padding: '14px 16px', borderTop: '1px solid ' + tk.line2, display: 'flex', flexDirection: 'column', gap: 11 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select value={r.type} onChange={(e) => setCell(r.uid, 'type', e.target.value)} style={{ ...selStyle, flex: 1 }}>
+                    {typeOpts.map((tp) => <option key={tp} value={tp}>{acctLabel(lang, tp)}</option>)}
+                  </select>
+                  {delBtn}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {a ? <Dot ticker={tkr} /> : <span style={{ width: 10, height: 10, borderRadius: 3, background: tk.line, flexShrink: 0 }} />}
+                  <Field value={r.ticker} onChange={(v) => setCell(r.uid, 'ticker', v.toUpperCase())} list="ticker-list" placeholder="TICKER" />
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ flex: 1 }}><div style={lbl}>{t(lang, 'shares')}</div><Field value={r.shares} onChange={(v) => setCell(r.uid, 'shares', v)} type="number" align="right" /></div>
+                  <div style={{ flex: 1 }}><div style={lbl}>{t(lang, 'targetPct')}</div><Field value={r.target} onChange={(v) => setCell(r.uid, 'target', v)} type="number" align="right" /></div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ fontSize: 12.5, color: a && !cash ? tk.sub : tk.faint }}>{t(lang, 'price')}: {a && !cash ? fmtMoney(a.price, native, lang, { decimals: 2 }) + ' ' + native : '—'}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: a ? tk.ink : tk.faint }}>{t(lang, 'value')}: {a ? fmtMoney(val, disp, lang, cash ? { maxDecimals: 2 } : undefined) : '—'}</span>
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={r.uid} style={{ display: 'grid', gridTemplateColumns: cols, gap: 12, alignItems: 'center', padding: '9px 20px', borderTop: '1px solid ' + tk.line2 }}>
-              <select value={r.type} onChange={(e) => setCell(r.uid, 'type', e.target.value)}
-                style={{ fontFamily: FB, fontSize: 13.5, fontWeight: 600, color: tk.ink, background: tk.inset, border: '1px solid ' + tk.line, borderRadius: 9, padding: '8px 10px', outline: 'none', cursor: 'pointer' }}>
+              <select value={r.type} onChange={(e) => setCell(r.uid, 'type', e.target.value)} style={selStyle}>
                 {typeOpts.map((tp) => <option key={tp} value={tp}>{acctLabel(lang, tp)}</option>)}
               </select>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -154,13 +186,11 @@ export function ViewData() {
               <span style={{ fontSize: 13, color: a && !cash ? tk.sub : tk.faint, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{a && !cash ? fmtMoney(a.price, native, lang, { decimals: 2 }) + ' ' + native : '—'}</span>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: a ? tk.ink : tk.faint, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{a ? fmtMoney(val, disp, lang, cash ? { maxDecimals: 2 } : undefined) : '—'}</span>
               <Field value={r.target} onChange={(v) => setCell(r.uid, 'target', v)} type="number" align="right" />
-              <button onClick={() => removeRow(r.uid)} title={t(lang, 'remove')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: tk.faint, display: 'flex', justifyContent: 'center', padding: 6, borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = tk.sell; e.currentTarget.style.background = tk.sellSoft; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = tk.faint; e.currentTarget.style.background = 'transparent'; }}><Icon name="trash" size={16} /></button>
+              {delBtn}
             </div>
           );
         })}
-        <div style={{ padding: '14px 20px 6px' }}><ActionBtn icon="plus" label={t(lang, 'addRow')} onClick={addRow} /></div>
+        <div style={{ padding: isMobile ? '14px 16px 6px' : '14px 20px 6px' }}><ActionBtn icon="plus" label={t(lang, 'addRow')} onClick={addRow} /></div>
       </Card>
 
       {/* footer: per-account target sums + note */}
