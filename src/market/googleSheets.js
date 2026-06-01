@@ -21,8 +21,19 @@
 
 export const FX_ROW = '__FX_USDCAD';
 
-// Parse one CSV line into trimmed cells, tolerating simple double-quoted fields.
-function splitCsvLine(line) {
+// Pick the delimiter for a line. Google publishes to the web as comma CSV, but
+// be tolerant: a tab- or pipe-separated variant parses too (pipe is what the
+// paste-in template uses, since GOOGLEFINANCE() formulas contain commas).
+function delimOf(line) {
+  if (line.includes('\t')) return '\t';
+  if (line.includes('|')) return '|';
+  return ',';
+}
+
+// Split one line into trimmed cells. For comma (real CSV) we honour simple
+// double-quoted fields; tab/pipe data is split plainly.
+function splitLine(line, delim) {
+  if (delim !== ',') return line.split(delim).map((s) => s.trim());
   const cells = [];
   let cur = '';
   let inQuotes = false;
@@ -59,7 +70,7 @@ export function parseSheetCsv(text) {
 
   const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
-    const [tickerCell, priceCell, chgCell] = splitCsvLine(line);
+    const [tickerCell, priceCell, chgCell] = splitLine(line, delimOf(line));
     const ticker = (tickerCell || '').trim();
     if (!ticker) continue;
     if (ticker.toLowerCase() === 'ticker') continue; // header

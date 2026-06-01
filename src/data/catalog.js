@@ -65,17 +65,20 @@ export const seedAssets = () => {
   return out;
 };
 
-// Copy-paste CSV the user pastes into their Google Sheet (cell A1). Each row's
-// price/change use =GOOGLEFINANCE(); when the sheet is published to the web as
-// CSV the formulas resolve to numbers that src/market/googleSheets.js parses.
-// Verify/fix any TICKER:EXCHANGE here if Google reports #N/A for a row.
+// Pipe-separated block the user pastes into their Google Sheet (cell A1), then
+// Data → Split text to columns → separator "|". A pipe is used because the
+// =GOOGLEFINANCE() formulas contain commas, so a comma paste would break them.
+// Once published to the web as CSV, the formulas resolve to numbers that
+// src/market/googleSheets.js parses. Fix any TICKER:EXCHANGE here if Google
+// reports #N/A for a row.
+export const SHEET_SEP = '|';
 export const sheetTemplate = () => {
-  const rows = ['ticker,price,change'];
+  const rows = [['ticker', 'price', 'change'].join(SHEET_SEP)];
   for (const ticker of MARKET_TICKERS) {
     const sym = ASSETS[ticker]?.gfSymbol;
     if (!sym) continue;
-    rows.push(`${ticker}|=GOOGLEFINANCE("${sym}","price")|=GOOGLEFINANCE("${sym}","changepct")`);
+    rows.push([ticker, `=GOOGLEFINANCE("${sym}","price")`, `=GOOGLEFINANCE("${sym}","changepct")`].join(SHEET_SEP));
   }
-  rows.push('__FX_USDCAD|=GOOGLEFINANCE("CURRENCY:USDCAD","price")|');
+  rows.push(['__FX_USDCAD', '=GOOGLEFINANCE("CURRENCY:USDCAD","price")', ''].join(SHEET_SEP));
   return rows.join('\n');
 };

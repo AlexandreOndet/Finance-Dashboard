@@ -76,13 +76,17 @@ return `{ quotes, fx, errors }`. Parsing is tolerant: a cell that won't resolve
 falls back to its seed price — it never throws. The whole sheet is one document, so
 the layer makes **one fetch** when anything is stale.
 
-**The sheet contract:** columns `ticker,price,change`, one row per market ticker
-(column A = the app's internal catalog ticker), plus a reserved `__FX_USDCAD` row
-for `GOOGLEFINANCE("CURRENCY:USDCAD","price")`. The Google ticker per asset
+**The sheet contract:** three columns `ticker | price | change`, one row per market
+ticker (column A = the app's internal catalog ticker), plus a reserved `__FX_USDCAD`
+row for `GOOGLEFINANCE("CURRENCY:USDCAD","price")`. The Google ticker per asset
 (`TICKER:EXCHANGE`, e.g. `VFV:TSE`, `SPUS:NYSEARCA`) lives in `catalog.js` as
-`gfSymbol`; `sheetTemplate()` renders the exact copy-paste block (also shown in
-Settings). If Google reports `#N/A` for a row, fix that `gfSymbol` (or the sheet
-cell) — no other code changes needed.
+`gfSymbol`; `sheetTemplate()` renders the exact paste-in block (also shown in
+Settings). The template is **pipe-separated** (`SHEET_SEP`), not comma — the
+`=GOOGLEFINANCE()` cells contain commas, so the user pastes it then runs Data →
+Split text to columns on `|`. Google then publishes plain comma CSV, which
+`parseSheetCsv` reads (it auto-detects comma/tab/pipe, so all three parse). If
+Google reports `#N/A` for a row, fix that `gfSymbol` (or the sheet cell) — no other
+code changes needed.
 
 **Sheet-URL handling:** the user pastes their published CSV URL in the Settings
 modal (`src/views/Settings.jsx`, gear icon). It's stored only in `localStorage`

@@ -64,6 +64,14 @@ describe('googleSheets parsing', () => {
     expect(quotes.BRK.price).toBeCloseTo(1234.5);
   });
 
+  it('also parses pipe- and tab-separated rows', () => {
+    const pipe = parseSheetCsv('ticker|price|change\nVFV|154.32|0.41\n__FX_USDCAD|1.37|');
+    expect(pipe.quotes.VFV).toMatchObject({ price: 154.32, chg: 0.41 });
+    expect(pipe.fx).toBeCloseTo(1.37);
+    const tab = parseSheetCsv('ticker\tprice\tchange\nVOO\t545\t0.4');
+    expect(tab.quotes.VOO.price).toBe(545);
+  });
+
   it('fetchSheet returns empty when no URL is set (and never fetches)', async () => {
     const r = await fetchSheet('', async () => { throw new Error('should not fetch'); });
     expect(r).toEqual({ quotes: {}, fx: null, errors: {} });
@@ -87,8 +95,8 @@ describe('googleSheets parsing', () => {
 describe('sheetTemplate', () => {
   it('emits a header, GOOGLEFINANCE rows and the FX row', () => {
     const tpl = sheetTemplate();
-    expect(tpl.split('\n')[0]).toBe('ticker,price,change');
-    expect(tpl).toMatch(/VFV,=GOOGLEFINANCE\("VFV:TSE","price"\)/);
-    expect(tpl).toMatch(/__FX_USDCAD,=GOOGLEFINANCE\("CURRENCY:USDCAD","price"\)/);
+    expect(tpl.split('\n')[0]).toBe('ticker|price|change');
+    expect(tpl).toMatch(/VFV\|=GOOGLEFINANCE\("VFV:TSE","price"\)/);
+    expect(tpl).toMatch(/__FX_USDCAD\|=GOOGLEFINANCE\("CURRENCY:USDCAD","price"\)/);
   });
 });
