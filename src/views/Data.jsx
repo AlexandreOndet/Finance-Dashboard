@@ -6,7 +6,7 @@ import React from 'react';
 import { useApp } from '../context.jsx';
 import { Card, Dot } from '../components/ui.jsx';
 import { Icon } from '../components/icons.jsx';
-import { ASSETS, DEFAULT_PORTFOLIOS, ACCOUNT_ORDER, isCash } from '../data/catalog.js';
+import { DEFAULT_PORTFOLIOS, ACCOUNT_ORDER, isCash } from '../data/catalog.js';
 import { CSV_HEADER, csvToPortfolios, portfoliosToCSV } from '../data/csv.js';
 import { holdingValue, curOf } from '../data/compute.js';
 import { t, acctLabel, fmtMoney } from '../i18n.js';
@@ -113,7 +113,7 @@ export function ViewData() {
 
   return (
     <div>
-      <datalist id="ticker-list">{Object.keys(ASSETS).map((tk2) => <option key={tk2} value={tk2}>{ASSETS[tk2].name}</option>)}</datalist>
+      <datalist id="ticker-list">{Object.keys(assets).map((tk2) => <option key={tk2} value={tk2}>{assets[tk2].name}</option>)}</datalist>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 22, gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: '"Bricolage Grotesque", sans-serif', fontSize: 26, fontWeight: 700, color: tk.ink, letterSpacing: -0.5 }}>{t(lang, 'data_title')}</h1>

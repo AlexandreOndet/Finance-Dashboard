@@ -47,14 +47,20 @@ avoids GitHub Pages SPA-404 issues. Don't add react-router without reason.
 **The market-data seam is the most important thing to understand.** Prices are
 dynamic but the pure math must stay testable, so:
 
-- `src/data/catalog.js` — static asset metadata + **seed (fallback) prices** +
-  `exchange` per ticker, plus the default portfolios, global targets, and
-  `seedAssets()` (catalog → a resolved `assets` map using seed prices).
+- `src/data/catalog.js` — built-in asset **defaults / seed (fallback) prices**,
+  the default portfolios, global targets, `seedAssets()` (catalog → a resolved
+  `assets` map using seed prices), and `assetsFromQuotes(quotes)` — the **pure
+  merge** that overlays sheet-derived metadata/prices onto the seed (overrides
+  catalog when a field is present, synthesises records for tickers not in the
+  catalog). The sheet is the source of truth for assets; the catalog is the
+  offline/first-load fallback + starter template. Currency for sheet-only tickers
+  is inferred from the `gfSymbol` exchange via `currencyFromGfSymbol()`.
 - `src/data/compute.js` — **pure** valuation/rebalance functions. Every
   price-dependent function takes a resolved `assets` map and an `fx` object as
   arguments (e.g. `rebalance(p, disp, assets, fx)`). It never reaches for globals.
 - `src/market/useMarketData.js` — builds the resolved `assets` map by layering
-  **catalog seed → 24h localStorage cache → live quotes**, and exposes
+  **catalog seed → 24h localStorage cache → live sheet quotes** (via
+  `assetsFromQuotes`), and exposes
   `{ assets, fx, loading, lastUpdated, refresh, configured, sheetUrl, setSheetUrl }`.
 - `App.jsx` puts `market.assets` / `market.fx` into context; views call the
   `compute.js` helpers with those. **This single merge point is the only place live
@@ -76,17 +82,28 @@ return `{ quotes, fx, errors }`. Parsing is tolerant: a cell that won't resolve
 falls back to its seed price — it never throws. The whole sheet is one document, so
 the layer makes **one fetch** when anything is stale.
 
-**The sheet contract:** three columns `ticker | price | change`, one row per market
-ticker (column A = the app's internal catalog ticker), plus a reserved `__FX_USDCAD`
-row for `GOOGLEFINANCE("CURRENCY:USDCAD","price")`. The Google ticker per asset
-(`EXCHANGE:TICKER`, e.g. `TSE:VFV`, `NYSEARCA:SPUS`) lives in `catalog.js` as
-`gfSymbol`; `sheetTemplate()` renders the exact paste-in block (also shown in
-Settings). The template is **pipe-separated** (`SHEET_SEP`), not comma — the
-`=GOOGLEFINANCE()` cells contain commas, so the user pastes it then runs Data →
-Split text to columns on `|`. Google then publishes plain comma CSV, which
-`parseSheetCsv` reads (it auto-detects comma/tab/pipe, so all three parse). If
-Google reports `#N/A` for a row, fix that `gfSymbol` (or the sheet cell) — no other
-code changes needed.
+**The sheet contract:** the sheet is the **asset registry** — columns
+`ticker | name | gfSymbol | class | price` (`SHEET_COLUMNS`), one row per asset
+(column A = the app's internal ticker), plus a reserved `__FX_USDCAD` row whose
+`price` cell is `GOOGLEFINANCE("CURRENCY:USDCAD")`. `parseSheetCsv` is
+**header-aware** (matches columns by name, order-independent; falls back to
+positional `ticker,price` for a bare sheet). Add a row to add an asset with no
+code change; `name`/`class` override the catalog when present (blank keeps the
+catalog default), and currency is inferred from the `gfSymbol` exchange
+(`TSE:`→CAD, `NASDAQ:`/`NYSEARCA:`→USD). The Google symbol per built-in asset
+(`EXCHANGE:TICKER`, e.g. `TSE:VFV`) lives in `catalog.js` as `gfSymbol`;
+`sheetTemplate()` renders the starter block (also shown in Settings). Only the
+**single-argument** (default-price) form is emitted — `=GOOGLEFINANCE("TSE:VFV")`
+— because a two-argument call like `…,"changepct")` breaks in locales that use
+`;` as the formula argument separator; daily change is therefore not fetched
+(holdings keep their catalog seed change).
+
+The template is **pipe-separated** (`SHEET_SEP`), not comma — the `=GOOGLEFINANCE()`
+cells contain commas, so the user pastes it then runs Data → Split text to columns on
+`|`. Google then publishes plain CSV, which `parseSheetCsv` reads: it auto-detects
+the comma/tab/pipe delimiter, and `parseNum` handles both US (`1,234.56`) and
+locale (`185,61` comma-decimal) number formats Google emits. If a row shows `#N/A`,
+fix that `gfSymbol` (or the sheet cell) — no other code changes needed.
 
 **Sheet-URL handling:** the user pastes their published CSV URL in the Settings
 modal (`src/views/Settings.jsx`, gear icon). It's stored only in `localStorage`

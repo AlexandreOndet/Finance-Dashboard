@@ -51,17 +51,52 @@ function splitLine(line, delim) {
   return cells.map((s) => s.trim());
 }
 
-// Parse a possibly-formatted number cell. Strips currency symbols, spaces and
-// thousands separators. Returns NaN for blanks or "#N/A" (still-calculating).
+// Parse a possibly-formatted number cell into a JS number. Handles both the
+// US (1,234.56) and European/locale (1.234,56 or 185,61 — comma decimal) styles
+// Google publishes depending on the sheet's locale. Returns NaN for blanks,
+// "#N/A"/"#ERROR" (still calculating / bad formula), or unresolved formulas.
 function parseNum(raw) {
   if (raw == null) return NaN;
-  const s = String(raw).replace(/[$£€\s]/g, '').replace(/,(?=\d{3}\b)/g, '');
-  if (!s || /#N\/?A|#ERROR|#REF/i.test(s)) return NaN;
+  let s = String(raw).trim().replace(/[$£€\s]/g, '');
+  if (!s || /#N\/?A|#ERROR|#REF|GOOGLEFINANCE/i.test(s)) return NaN;
+
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  if (lastComma !== -1 && lastDot !== -1) {
+    // Both separators present → the right-most one is the decimal point.
+    s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') // 1.234,56
+                            : s.replace(/,/g, '');                   // 1,234.56
+  } else if (lastComma !== -1) {
+    // Only comma(s): several → thousands grouping; a single one → decimal.
+    const parts = s.split(',');
+    s = parts.length > 2 ? parts.join('') : s.replace(',', '.');
+  }
   return parseFloat(s);
 }
 
+// Locate columns from the header row. The sheet is the asset registry, so it
+// may carry metadata columns (name, gfSymbol, class) alongside price. Matching
+// is by header name, order-independent; a sheet with no recognised header falls
+// back to positional ticker, price[, change].
+function columnsOf(headerCells) {
+  const lower = headerCells.map((c) => c.toLowerCase());
+  const find = (...names) => { for (const n of names) { const i = lower.indexOf(n); if (i >= 0) return i; } return -1; };
+  const ticker = find('ticker');
+  if (ticker < 0) return null; // not a header row
+  const cols = {
+    ticker,
+    name: find('name'),
+    gf: find('gfsymbol', 'gf_symbol', 'symbol'),
+    klass: find('class', 'klass', 'category'),
+    price: find('price', 'value'),
+    chg: find('change', 'changepct', 'chg'),
+  };
+  if (cols.price < 0) cols.price = ticker + 1; // tolerate a header without an explicit price column
+  return cols;
+}
+
 // Parse the published-sheet CSV text into { quotes, fx, errors }.
-// quotes[ticker] = { price, chg, currency: null }; fx is a number|null;
+// quotes[ticker] = { price, chg?, name?, gfSymbol?, klass? }; fx is number|null;
 // errors[ticker] records cells that didn't resolve (never throws).
 export function parseSheetCsv(text) {
   const quotes = {};
@@ -69,13 +104,19 @@ export function parseSheetCsv(text) {
   let fx = null;
 
   const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  let cols = null;
   for (const line of lines) {
-    const [tickerCell, priceCell, chgCell] = splitLine(line, delimOf(line));
-    const ticker = (tickerCell || '').trim();
-    if (!ticker) continue;
-    if (ticker.toLowerCase() === 'ticker') continue; // header
+    const cells = splitLine(line, delimOf(line));
+    if (!cols) {
+      cols = columnsOf(cells);
+      if (cols) continue;                              // header row consumed
+      cols = { ticker: 0, name: -1, gf: -1, klass: -1, price: 1, chg: 2 }; // no header → positional
+    }
+    const at = (i) => (i >= 0 && i < cells.length ? cells[i] : undefined);
+    const ticker = (at(cols.ticker) || '').trim();
+    if (!ticker || ticker.toLowerCase() === 'ticker') continue;
 
-    const price = parseNum(priceCell);
+    const price = parseNum(at(cols.price));
 
     if (ticker.toUpperCase() === FX_ROW) {
       if (Number.isFinite(price)) fx = price;
@@ -84,8 +125,18 @@ export function parseSheetCsv(text) {
     }
 
     if (!Number.isFinite(price)) { errors[ticker] = 'no quote'; continue; }
-    const chg = parseNum(chgCell);
-    quotes[ticker] = { price, chg: Number.isFinite(chg) ? chg : 0, currency: null };
+    // Carry only the metadata the sheet actually provides, so blank cells leave
+    // the catalog defaults intact when the assets map is resolved.
+    const q = { price };
+    const name = (at(cols.name) || '').trim();
+    if (name) q.name = name;
+    const gf = (at(cols.gf) || '').trim();
+    if (gf) q.gfSymbol = gf;
+    const klass = (at(cols.klass) || '').trim();
+    if (klass) q.klass = klass;
+    const chg = parseNum(at(cols.chg));
+    if (Number.isFinite(chg)) q.chg = chg;
+    quotes[ticker] = q;
   }
 
   return { quotes, fx, errors };
