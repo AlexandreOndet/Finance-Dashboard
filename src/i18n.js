@@ -22,7 +22,7 @@ export const I18N = {
     priceLive: 'live', currency: 'Currency', language: 'Language', theme: 'Theme', light: 'Light', dark: 'Dark',
     // market data / settings
     settings: 'Market data', apiKey: 'Google Sheet CSV URL', apiKeyPlaceholder: 'Paste your published sheet CSV URL',
-    apiKeyHelp: 'Paste the template below into cell A1 of a new Google Sheet, then Data → Split text to columns → separator "|". Publish it (File → Share → Publish to web → CSV) and paste that URL here. The URL is stored only in this browser.',
+    apiKeyHelp: 'Paste the template below into cell A1 of a new Google Sheet, then Data → Split text to columns → separator "|". Publish it (File → Share → Publish to web → CSV) and paste that URL here. The URL is stored only in this browser. Add a row (ticker · name · gfSymbol · class · price) to track a new asset.',
     getKey: 'How to publish a sheet', refresh: 'Refresh prices', refreshing: 'Refreshing…',
     lastUpdated: 'Prices updated', never: 'never', usingSample: 'Using sample prices — add your Google Sheet URL for live data.',
     livePrices: 'Live prices active', sourceNote: 'Google Finance via your published Google Sheet · cached ~24h · ≤1 day old is fine.',
@@ -51,7 +51,7 @@ export const I18N = {
     portfolio: 'Compte', targetPct: 'Cible %', totalTarget: 'Total des cibles', mustBe100: 'devrait être 100 %',
     priceLive: 'direct', currency: 'Devise', language: 'Langue', theme: 'Thème', light: 'Clair', dark: 'Sombre',
     settings: 'Données de marché', apiKey: 'URL CSV de la feuille Google', apiKeyPlaceholder: "Collez l'URL CSV de votre feuille publiée",
-    apiKeyHelp: "Collez le modèle ci-dessous dans la cellule A1 d'une nouvelle feuille Google, puis Données → Scinder le texte en colonnes → séparateur « | ». Publiez-la (Fichier → Partager → Publier sur le Web → CSV) et collez cette URL ici. L'URL est stockée uniquement dans ce navigateur.",
+    apiKeyHelp: "Collez le modèle ci-dessous dans la cellule A1 d'une nouvelle feuille Google, puis Données → Scinder le texte en colonnes → séparateur « | ». Publiez-la (Fichier → Partager → Publier sur le Web → CSV) et collez cette URL ici. L'URL est stockée uniquement dans ce navigateur. Ajoutez une ligne (ticker · nom · gfSymbol · classe · cours) pour suivre un nouvel actif.",
     getKey: 'Comment publier une feuille', refresh: 'Actualiser les cours', refreshing: 'Actualisation…',
     lastUpdated: 'Cours mis à jour', never: 'jamais', usingSample: "Cours d'exemple — ajoutez l'URL de votre feuille Google pour les données en direct.",
     livePrices: 'Cours en direct actifs', sourceNote: 'Google Finance via votre feuille Google publiée · en cache ~24 h · ≤ 1 jour suffit.',

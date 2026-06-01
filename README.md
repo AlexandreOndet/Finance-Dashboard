@@ -27,19 +27,24 @@ and a static page can't scrape Google directly (CORS), so a published-CSV sheet 
 the bridge.
 
 - **One-time setup.** Open **Settings** (gear icon, top bar), copy the **sheet
-  template** shown there into a new Google Sheet (it's rows of
-  `=GOOGLEFINANCE("TSE:VFV")` etc.), then **File → Share → Publish to web →
-  CSV** and paste that URL back into Settings. The URL is stored only in your browser
-  (`localStorage`); it's a public published CSV, so nothing secret is involved.
+  template** shown there into a new Google Sheet, **Data → Split text to columns →
+  `|`**, then **File → Share → Publish to web → CSV** and paste that URL back into
+  Settings. The URL is stored only in your browser (`localStorage`); it's a public
+  published CSV, so nothing secret is involved.
+- **The sheet is the asset registry.** Columns are `ticker | name | gfSymbol |
+  class | price` (the price cell is `=GOOGLEFINANCE("TSE:VFV")`). **To add a new
+  asset, just add a row** — no code change. Currency is inferred from the `gfSymbol`
+  exchange (`TSE:`→CAD, `NASDAQ:`/`NYSEARCA:`→USD), and `name`/`class` override the
+  built-in defaults. Then add a holding for that ticker on the **Data** page.
 - **Cached ~24h.** Quotes and FX are cached, so reloads and re-renders don't re-hit
   the network. Data up to a day old is fine; a **Refresh** button forces an update.
 - **Seeded fallback.** Without a sheet URL (or if a ticker shows `#N/A` / you're
   offline), the app falls back to the sample prices in `src/data/catalog.js`, so it
   always renders. The Settings badge shows whether live prices are active.
 
-Each asset's Google ticker (`EXCHANGE:TICKER`, e.g. `TSE:VFV`, `NYSEARCA:SPUS`) lives
-in `src/data/catalog.js` as `gfSymbol`; if Google reports `#N/A` for a row, fix that
-symbol in the sheet (or the catalog) — no other code changes needed.
+The built-in assets in `src/data/catalog.js` are just defaults + the starter
+template; the published sheet is the source of truth. If Google reports `#N/A` for a
+row, fix that `EXCHANGE:TICKER` (e.g. `TSE:VFV`) in the sheet — no code changes needed.
 
 ## CSV format
 
