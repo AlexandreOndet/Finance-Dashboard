@@ -74,8 +74,8 @@ export const sheetTemplate = () => {
   for (const ticker of MARKET_TICKERS) {
     const sym = ASSETS[ticker]?.gfSymbol;
     if (!sym) continue;
-    rows.push(`${ticker},=GOOGLEFINANCE("${sym}","price"),=GOOGLEFINANCE("${sym}","changepct")`);
+    rows.push(`${ticker}|=GOOGLEFINANCE("${sym}","price")|=GOOGLEFINANCE("${sym}","changepct")`);
   }
-  rows.push('__FX_USDCAD,=GOOGLEFINANCE("CURRENCY:USDCAD","price"),');
+  rows.push('__FX_USDCAD|=GOOGLEFINANCE("CURRENCY:USDCAD","price")|');
   return rows.join('\n');
 };
