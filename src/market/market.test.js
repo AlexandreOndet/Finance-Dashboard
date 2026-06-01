@@ -96,7 +96,7 @@ describe('sheetTemplate', () => {
   it('emits a header, GOOGLEFINANCE rows and the FX row', () => {
     const tpl = sheetTemplate();
     expect(tpl.split('\n')[0]).toBe('ticker|price|change');
-    expect(tpl).toMatch(/VFV\|=GOOGLEFINANCE\("VFV:TSE","price"\)/);
-    expect(tpl).toMatch(/__FX_USDCAD\|=GOOGLEFINANCE\("CURRENCY:USDCAD","price"\)/);
+    expect(tpl).toMatch(/VFV\|=GOOGLEFINANCE\("TSE:VFV"\)\|=GOOGLEFINANCE\("TSE:VFV","changepct"\)/);
+    expect(tpl).toMatch(/__FX_USDCAD\|=GOOGLEFINANCE\("CURRENCY:USDCAD"\)/);
   });
 });

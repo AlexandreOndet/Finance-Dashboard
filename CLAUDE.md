@@ -79,7 +79,7 @@ the layer makes **one fetch** when anything is stale.
 **The sheet contract:** three columns `ticker | price | change`, one row per market
 ticker (column A = the app's internal catalog ticker), plus a reserved `__FX_USDCAD`
 row for `GOOGLEFINANCE("CURRENCY:USDCAD","price")`. The Google ticker per asset
-(`TICKER:EXCHANGE`, e.g. `VFV:TSE`, `SPUS:NYSEARCA`) lives in `catalog.js` as
+(`EXCHANGE:TICKER`, e.g. `TSE:VFV`, `NYSEARCA:SPUS`) lives in `catalog.js` as
 `gfSymbol`; `sheetTemplate()` renders the exact paste-in block (also shown in
 Settings). The template is **pipe-separated** (`SHEET_SEP`), not comma — the
 `=GOOGLEFINANCE()` cells contain commas, so the user pastes it then runs Data →

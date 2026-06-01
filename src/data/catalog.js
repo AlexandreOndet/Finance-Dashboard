@@ -6,29 +6,29 @@
 // the ticker ('TSX' for Canadian listings, 'US' for US listings).
 // All portfolio math runs in a holding's native currency, converted at
 // display time. Targets are desired % of each portfolio. `gfSymbol` is the
-// Google Finance ticker (TICKER:EXCHANGE) the user puts in their published
-// Google Sheet — see sheetTemplate() and src/market/googleSheets.js.
+// GOOGLEFINANCE ticker (EXCHANGE:TICKER, e.g. TSE:VFV) the user puts in their
+// published Google Sheet — see sheetTemplate() and src/market/googleSheets.js.
 // ───────────────────────────────────────────────────────────────
 
 export const DEFAULT_FX = { CADperUSD: 1.37 }; // 1 USD = 1.37 CAD (fallback; market layer refreshes)
 
 export const ASSETS = {
-  VFV:   { name: 'Vanguard S&P 500 Index ETF',            cur: 'CAD', exchange: 'TSX', gfSymbol: 'VFV:TSE',       seedPrice: 154.00, seedChg:  0.42, klass: 'US Equity' },
-  IBIT:  { name: 'iShares Bitcoin Trust',                 cur: 'USD', exchange: 'US',  gfSymbol: 'IBIT:NASDAQ',   seedPrice:  61.50, seedChg: -1.83, klass: 'Crypto' },
-  VOO:   { name: 'Vanguard S&P 500 ETF',                  cur: 'USD', exchange: 'US',  gfSymbol: 'VOO:NYSEARCA',  seedPrice: 545.00, seedChg:  0.39, klass: 'US Equity' },
-  SPUS:  { name: 'SP Funds S&P 500 Sharia ETF',           cur: 'USD', exchange: 'US',  gfSymbol: 'SPUS:NYSEARCA', seedPrice:  49.20, seedChg:  0.51, klass: 'US Equity' },
-  ETHXB: { name: 'Purpose Ether ETF',                     cur: 'CAD', exchange: 'TSX', gfSymbol: 'ETHX.B:TSE',    seedPrice:  18.40, seedChg: -2.61, klass: 'Crypto' },
-  WSHR:  { name: 'Wealthsimple Shariah World Equity ETF', cur: 'CAD', exchange: 'TSX', gfSymbol: 'WSHR:TSE',      seedPrice:  32.10, seedChg:  0.28, klass: 'Global Equity' },
-  ZJPN:  { name: 'BMO Japan Index ETF',                   cur: 'CAD', exchange: 'TSX', gfSymbol: 'ZJPN:TSE',      seedPrice:  41.80, seedChg:  0.74, klass: 'Intl Equity' },
-  CASH:  { name: 'Global X High Interest Savings ETF',    cur: 'CAD', exchange: 'TSX', gfSymbol: 'CASH:TSE',      seedPrice:  50.00, seedChg:  0.00, klass: 'Cash' },
-  CGLC:  { name: 'iShares Gold Bullion ETF',              cur: 'CAD', exchange: 'TSX', gfSymbol: 'CGL.C:TSE',     seedPrice:  11.50, seedChg:  0.17, klass: 'Gold' },
-  VEE:   { name: 'Vanguard FTSE Emerging Markets ETF',    cur: 'CAD', exchange: 'TSX', gfSymbol: 'VEE:TSE',       seedPrice:  49.66, seedChg:  0.71, klass: 'Emerging Markets' },
-  ZGQ:   { name: 'BMO MSCI All Country World High Quality Index Series Units ETF',      cur: 'CAD', exchange: 'TSX', gfSymbol: 'ZGQ:TSE',       seedPrice:  28.20, seedChg:  0.25, klass: 'Global Equity' },
+  VFV:   { name: 'Vanguard S&P 500 Index ETF',            cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:VFV',       seedPrice: 154.00, seedChg:  0.42, klass: 'US Equity' },
+  IBIT:  { name: 'iShares Bitcoin Trust',                 cur: 'USD', exchange: 'US',  gfSymbol: 'NASDAQ:IBIT',   seedPrice:  61.50, seedChg: -1.83, klass: 'Crypto' },
+  VOO:   { name: 'Vanguard S&P 500 ETF',                  cur: 'USD', exchange: 'US',  gfSymbol: 'NYSEARCA:VOO',  seedPrice: 545.00, seedChg:  0.39, klass: 'US Equity' },
+  SPUS:  { name: 'SP Funds S&P 500 Sharia ETF',           cur: 'USD', exchange: 'US',  gfSymbol: 'NYSEARCA:SPUS', seedPrice:  49.20, seedChg:  0.51, klass: 'US Equity' },
+  ETHXB: { name: 'Purpose Ether ETF',                     cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:ETHX.B',    seedPrice:  18.40, seedChg: -2.61, klass: 'Crypto' },
+  WSHR:  { name: 'Wealthsimple Shariah World Equity ETF', cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:WSHR',      seedPrice:  32.10, seedChg:  0.28, klass: 'Global Equity' },
+  ZJPN:  { name: 'BMO Japan Index ETF',                   cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:ZJPN',      seedPrice:  41.80, seedChg:  0.74, klass: 'Intl Equity' },
+  CASH:  { name: 'Global X High Interest Savings ETF',    cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:CASH',      seedPrice:  50.00, seedChg:  0.00, klass: 'Cash' },
+  CGLC:  { name: 'iShares Gold Bullion ETF',              cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:CGL.C',     seedPrice:  11.50, seedChg:  0.17, klass: 'Gold' },
+  VEE:   { name: 'Vanguard FTSE Emerging Markets ETF',    cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:VEE',       seedPrice:  49.66, seedChg:  0.71, klass: 'Emerging Markets' },
+  ZGQ:   { name: 'BMO MSCI All Country World High Quality Index Series Units ETF',      cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:ZGQ',       seedPrice:  28.20, seedChg:  0.25, klass: 'Global Equity' },
   // extra catalog entries available when adding holdings
-  XEQT:  { name: 'iShares Core Equity ETF Portfolio',     cur: 'CAD', exchange: 'TSX', gfSymbol: 'XEQT:TSE',      seedPrice:  37.40, seedChg:  0.33, klass: 'Global Equity' },
-  VDY:   { name: 'Vanguard FTSE Cdn High Div Yield ETF',  cur: 'CAD', exchange: 'TSX', gfSymbol: 'VDY:TSE',       seedPrice:  49.90, seedChg:  0.18, klass: 'Cdn Equity' },
-  ZAG:   { name: 'BMO Aggregate Bond Index ETF',          cur: 'CAD', exchange: 'TSX', gfSymbol: 'ZAG:TSE',       seedPrice:  13.60, seedChg: -0.06, klass: 'Fixed Income' },
-  QQQ:   { name: 'Invesco QQQ Trust',                     cur: 'USD', exchange: 'US',  gfSymbol: 'QQQ:NASDAQ',    seedPrice: 498.30, seedChg:  0.62, klass: 'US Equity' },
+  XEQT:  { name: 'iShares Core Equity ETF Portfolio',     cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:XEQT',      seedPrice:  37.40, seedChg:  0.33, klass: 'Global Equity' },
+  VDY:   { name: 'Vanguard FTSE Cdn High Div Yield ETF',  cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:VDY',       seedPrice:  49.90, seedChg:  0.18, klass: 'Cdn Equity' },
+  ZAG:   { name: 'BMO Aggregate Bond Index ETF',          cur: 'CAD', exchange: 'TSX', gfSymbol: 'TSE:ZAG',       seedPrice:  13.60, seedChg: -0.06, klass: 'Fixed Income' },
+  QQQ:   { name: 'Invesco QQQ Trust',                     cur: 'USD', exchange: 'US',  gfSymbol: 'NASDAQ:QQQ',    seedPrice: 498.30, seedChg:  0.62, klass: 'US Equity' },
   // Synthetic "cash" assets — uninvested money held in an account. Priced at 1
   // (shares = dollar amount in the native currency) and never quoted by the
   // market layer (exchange 'NONE'); see MARKET_TICKERS / isCash below.
@@ -73,12 +73,13 @@ export const seedAssets = () => {
 // reports #N/A for a row.
 export const SHEET_SEP = '|';
 export const sheetTemplate = () => {
+  // price is GOOGLEFINANCE's default attribute, so the price cell omits it.
   const rows = [['ticker', 'price', 'change'].join(SHEET_SEP)];
   for (const ticker of MARKET_TICKERS) {
     const sym = ASSETS[ticker]?.gfSymbol;
     if (!sym) continue;
-    rows.push([ticker, `=GOOGLEFINANCE("${sym}","price")`, `=GOOGLEFINANCE("${sym}","changepct")`].join(SHEET_SEP));
+    rows.push([ticker, `=GOOGLEFINANCE("${sym}")`, `=GOOGLEFINANCE("${sym}","changepct")`].join(SHEET_SEP));
   }
-  rows.push(['__FX_USDCAD', '=GOOGLEFINANCE("CURRENCY:USDCAD","price")', ''].join(SHEET_SEP));
+  rows.push(['__FX_USDCAD', '=GOOGLEFINANCE("CURRENCY:USDCAD")', ''].join(SHEET_SEP));
   return rows.join('\n');
 };

@@ -28,7 +28,7 @@ the bridge.
 
 - **One-time setup.** Open **Settings** (gear icon, top bar), copy the **sheet
   template** shown there into a new Google Sheet (it's rows of
-  `=GOOGLEFINANCE("VFV:TSE","price")` etc.), then **File → Share → Publish to web →
+  `=GOOGLEFINANCE("TSE:VFV")` etc.), then **File → Share → Publish to web →
   CSV** and paste that URL back into Settings. The URL is stored only in your browser
   (`localStorage`); it's a public published CSV, so nothing secret is involved.
 - **Cached ~24h.** Quotes and FX are cached, so reloads and re-renders don't re-hit
@@ -37,7 +37,7 @@ the bridge.
   offline), the app falls back to the sample prices in `src/data/catalog.js`, so it
   always renders. The Settings badge shows whether live prices are active.
 
-Each asset's Google ticker (`TICKER:EXCHANGE`, e.g. `VFV:TSE`, `SPUS:NYSEARCA`) lives
+Each asset's Google ticker (`EXCHANGE:TICKER`, e.g. `TSE:VFV`, `NYSEARCA:SPUS`) lives
 in `src/data/catalog.js` as `gfSymbol`; if Google reports `#N/A` for a row, fix that
 symbol in the sheet (or the catalog) — no other code changes needed.
 
