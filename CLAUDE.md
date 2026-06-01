@@ -55,7 +55,7 @@ dynamic but the pure math must stay testable, so:
   arguments (e.g. `rebalance(p, disp, assets, fx)`). It never reaches for globals.
 - `src/market/useMarketData.js` — builds the resolved `assets` map by layering
   **catalog seed → 24h localStorage cache → live quotes**, and exposes
-  `{ assets, fx, loading, lastUpdated, refresh, hasKey, setApiKey }`.
+  `{ assets, fx, loading, lastUpdated, refresh, configured, sheetUrl, setSheetUrl }`.
 - `App.jsx` puts `market.assets` / `market.fx` into context; views call the
   `compute.js` helpers with those. **This single merge point is the only place live
   data enters** — views are otherwise pure presentation.
@@ -64,22 +64,34 @@ So: to change pricing behaviour, edit `market/`; to change math, edit `compute.j
 (and its test); to change the catalog/seed values, edit `catalog.js`. Don't thread
 prices through views any other way.
 
-**Market provider = Twelve Data** (`src/market/twelveData.js`), chosen because it's
-free, CORS-friendly (works from the static site), and covers both TSX and US
-listings. `fetchQuotes`/`fetchFx` take an injectable `fetchImpl` (last arg) so tests
-mock the network. Parsing is tolerant: per-symbol failures are reported in `errors`
-but never abort the batch. Tickers are mapped to exchanges in `src/market/symbols.js`
-and **batched one request per exchange** to stay under the free-tier rate limit; if a
-new ticker needs different routing, fix it there.
+**Market provider = Google Finance via a published Google Sheet**
+(`src/market/googleSheets.js`). There is no official Google Finance REST API and
+this is a static, client-side site, so we can't call Google directly (CORS). Instead
+the user keeps one Google Sheet of `=GOOGLEFINANCE(...)` rows and **publishes it to
+the web as CSV**; that published-CSV URL *is* CORS-friendly, free, keyless, and
+covers TSX + US listings + USD/CAD FX. `parseSheetCsv(text)` and
+`fetchSheet(sheetUrl, fetchImpl)` (injectable `fetchImpl` so tests mock the network)
+return `{ quotes, fx, errors }`. Parsing is tolerant: a cell that won't resolve
+(e.g. `#N/A` while Google recalculates) is reported in `errors` and that ticker
+falls back to its seed price — it never throws. The whole sheet is one document, so
+the layer makes **one fetch** when anything is stale.
 
-**API key handling:** the user pastes a free Twelve Data key in the Settings modal
-(`src/views/Settings.jsx`, gear icon in the top bar). It's stored only in
-`localStorage` (`allocator-apikey`) — never commit a key. With no key, the app
-silently runs on seed prices; the Settings badge reflects live-vs-sample.
+**The sheet contract:** columns `ticker,price,change`, one row per market ticker
+(column A = the app's internal catalog ticker), plus a reserved `__FX_USDCAD` row
+for `GOOGLEFINANCE("CURRENCY:USDCAD","price")`. The Google ticker per asset
+(`TICKER:EXCHANGE`, e.g. `VFV:TSE`, `SPUS:NYSEARCA`) lives in `catalog.js` as
+`gfSymbol`; `sheetTemplate()` renders the exact copy-paste block (also shown in
+Settings). If Google reports `#N/A` for a row, fix that `gfSymbol` (or the sheet
+cell) — no other code changes needed.
+
+**Sheet-URL handling:** the user pastes their published CSV URL in the Settings
+modal (`src/views/Settings.jsx`, gear icon). It's stored only in `localStorage`
+(`allocator-sheet-url`). The URL is a public published CSV (not a secret). With no
+URL, the app silently runs on seed prices; the Settings badge reflects live-vs-sample.
 
 **Caching:** `src/market/cache.js` stores quotes + FX with timestamps under versioned
 keys, `TTL_MS` = 24h (1-day-stale data is acceptable by design). `refresh()` ignores
-the TTL; normal loads only fetch missing/stale tickers.
+the TTL; normal loads only fetch when a ticker or FX is missing/stale.
 
 ## CSV format
 
@@ -97,7 +109,7 @@ is in `src/data/csv.js`; it's tolerant of header order and whitespace.
 `CASH_USD` (e.g. `NONREG,CASH_CAD,2000,0`). These are catalog assets priced at 1, so
 the `shares` column is just the dollar amount in that currency. They carry
 `exchange: 'NONE'` and are excluded from the market layer via `MARKET_TICKERS` /
-`isCash()` in `catalog.js` — never sent to Twelve Data. Everything else (totals,
+`isCash()` in `catalog.js` — never quoted from the sheet. Everything else (totals,
 drift, rebalance, donut) treats cash as an ordinary holding.
 
 ## i18n

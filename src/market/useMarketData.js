@@ -1,25 +1,25 @@
 // useMarketData — the single source of resolved prices for the app.
 //
 // On load it builds an `assets` map from the catalog (seed prices),
-// overlays any cached quotes, renders immediately, then — if an API key
-// is set — fetches stale/missing tickers + FX in the background and
-// overlays the live values. Everything is cached ~24h so reloads and
-// re-renders don't re-hit the network. No key → silently use seed/cache.
+// overlays any cached quotes, renders immediately, then — if a Google Sheet
+// CSV URL is configured — fetches the published sheet in the background and
+// overlays the live values + FX. Everything is cached ~24h so reloads and
+// re-renders don't re-hit the network. No URL → silently use seed/cache.
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_FX, seedAssets, MARKET_TICKERS } from '../data/catalog.js';
 import * as cache from './cache.js';
-import { fetchQuotes, fetchFx } from './twelveData.js';
+import { fetchSheet } from './googleSheets.js';
 
-const KEY_LS = 'allocator-apikey';
-// Cash tickers are excluded here (MARKET_TICKERS), so they are never batched,
-// requested, or cached — this is the single point where data enters the fetch.
+const URL_LS = 'allocator-sheet-url';
+// Cash tickers are excluded here (MARKET_TICKERS), so they are never requested
+// or cached — this is the single point where live data enters the app.
 const ALL_TICKERS = MARKET_TICKERS;
 
-export const loadApiKey = () => {
-  try { return localStorage.getItem(KEY_LS) || ''; } catch { return ''; }
+export const loadSheetUrl = () => {
+  try { return localStorage.getItem(URL_LS) || ''; } catch { return ''; }
 };
-const saveApiKey = (key) => {
-  try { key ? localStorage.setItem(KEY_LS, key) : localStorage.removeItem(KEY_LS); } catch { /* noop */ }
+const saveSheetUrl = (url) => {
+  try { url ? localStorage.setItem(URL_LS, url) : localStorage.removeItem(URL_LS); } catch { /* noop */ }
 };
 
 // Build the resolved assets map: catalog seed → overlay cached quotes.
@@ -39,7 +39,7 @@ const resolveFx = () => {
 };
 
 export function useMarketData() {
-  const [apiKey, setApiKeyState] = useState(loadApiKey);
+  const [sheetUrl, setSheetUrlState] = useState(loadSheetUrl);
   const [assets, setAssets] = useState(resolveAssets);
   const [fx, setFx] = useState(resolveFx);
   const [loading, setLoading] = useState(false);
@@ -47,33 +47,32 @@ export function useMarketData() {
   const [lastUpdated, setLastUpdated] = useState(cache.lastUpdatedTs);
 
   const load = useCallback(async (force = false) => {
-    const key = loadApiKey();
-    if (!key) { // no key → seed/cache only
+    const url = loadSheetUrl();
+    if (!url) { // not configured → seed/cache only
       setAssets(resolveAssets());
       setFx(resolveFx());
       setLastUpdated(cache.lastUpdatedTs());
       return;
     }
-    const toFetch = force ? ALL_TICKERS : cache.staleTickers(ALL_TICKERS);
+    // One published sheet holds every quote + FX, so we fetch the whole
+    // document if anything is stale (or on a forced refresh).
+    const quotesStale = force || cache.staleTickers(ALL_TICKERS).length > 0;
     const fxStale = force || !cache.isFresh(cache.readFx());
-    if (toFetch.length === 0 && !fxStale) { setLastUpdated(cache.lastUpdatedTs()); return; }
+    if (!quotesStale && !fxStale) { setLastUpdated(cache.lastUpdatedTs()); return; }
 
     setLoading(true);
     setError(null);
     try {
-      const [quoteRes, fxRate] = await Promise.all([
-        toFetch.length ? fetchQuotes(toFetch, key) : Promise.resolve({ quotes: {}, errors: {} }),
-        fxStale ? fetchFx(key) : Promise.resolve(null),
-      ]);
-      if (Object.keys(quoteRes.quotes).length) cache.writeQuotes(quoteRes.quotes);
+      const { quotes, fx: fxRate, errors } = await fetchSheet(url);
+      if (Object.keys(quotes).length) cache.writeQuotes(quotes);
       if (Number.isFinite(fxRate)) cache.writeFx(fxRate);
 
       setAssets(resolveAssets());
       setFx(resolveFx());
       setLastUpdated(cache.lastUpdatedTs());
 
-      const gotNothing = !Object.keys(quoteRes.quotes).length && !Number.isFinite(fxRate);
-      const errs = Object.values(quoteRes.errors);
+      const gotNothing = !Object.keys(quotes).length && !Number.isFinite(fxRate);
+      const errs = Object.values(errors);
       if (gotNothing && errs.length) setError(errs[0]);
     } catch (e) {
       setError(e.message || 'Failed to load market data');
@@ -82,15 +81,15 @@ export function useMarketData() {
     }
   }, []);
 
-  // Initial load + whenever the key changes.
-  useEffect(() => { load(false); }, [load, apiKey]);
+  // Initial load + whenever the sheet URL changes.
+  useEffect(() => { load(false); }, [load, sheetUrl]);
 
-  const setApiKey = useCallback((key) => {
-    const trimmed = (key || '').trim();
-    saveApiKey(trimmed);
-    setApiKeyState(trimmed);
+  const setSheetUrl = useCallback((url) => {
+    const trimmed = (url || '').trim();
+    saveSheetUrl(trimmed);
+    setSheetUrlState(trimmed);
   }, []);
   const refresh = useCallback(() => load(true), [load]);
 
-  return { assets, fx, loading, error, lastUpdated, apiKey, hasKey: !!apiKey, setApiKey, refresh };
+  return { assets, fx, loading, error, lastUpdated, sheetUrl, configured: !!sheetUrl, setSheetUrl, refresh };
 }

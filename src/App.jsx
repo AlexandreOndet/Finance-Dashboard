@@ -73,7 +73,7 @@ function Topbar({ onOpenSettings }) {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, padding: '16px 34px', borderBottom: '1px solid ' + tk.line, background: tk.bg, position: 'sticky', top: 0, zIndex: 20 }}>
       <Segmented size="sm" value={disp} onChange={setDisp} options={[{ value: 'CAD', label: 'CAD' }, { value: 'USD', label: 'USD' }]} />
       <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: 'en', label: 'EN' }, { value: 'fr', label: 'FR' }]} />
-      <IconButton icon="settings" title={t(lang, 'settings')} onClick={onOpenSettings} badge={!market.hasKey} />
+      <IconButton icon="settings" title={t(lang, 'settings')} onClick={onOpenSettings} badge={!market.configured} />
       <IconButton icon={mode === 'dark' ? 'sun' : 'moon'} title={t(lang, 'theme')} onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} />
     </div>
   );

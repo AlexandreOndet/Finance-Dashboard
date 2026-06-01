@@ -20,21 +20,26 @@ Implements the "Modern" design direction from the Claude Design handoff:
 
 ## Market data
 
-Prices and the USD→CAD FX rate are fetched from the **free [Twelve Data](https://twelvedata.com)
-API**, which is CORS-friendly so it works directly from the static site (no backend).
+Prices and the USD→CAD FX rate come from **Google Finance**, via a Google Sheet you
+publish — free, keyless, covers Canadian (TSX) **and** US listings, and works
+directly from the static site (no backend). There's no official Google Finance API
+and a static page can't scrape Google directly (CORS), so a published-CSV sheet is
+the bridge.
 
-- **Bring your own key.** Open **Settings** (gear icon, top bar) and paste a free
-  Twelve Data API key. It's stored only in your browser (`localStorage`) — nothing
-  secret is committed to the repo, and each visitor uses their own free quota.
+- **One-time setup.** Open **Settings** (gear icon, top bar), copy the **sheet
+  template** shown there into a new Google Sheet (it's rows of
+  `=GOOGLEFINANCE("VFV:TSE","price")` etc.), then **File → Share → Publish to web →
+  CSV** and paste that URL back into Settings. The URL is stored only in your browser
+  (`localStorage`); it's a public published CSV, so nothing secret is involved.
 - **Cached ~24h.** Quotes and FX are cached, so reloads and re-renders don't re-hit
   the network. Data up to a day old is fine; a **Refresh** button forces an update.
-- **Seeded fallback.** Without a key (or if a ticker isn't covered / you're offline),
-  the app falls back to the sample prices in `src/data/catalog.js`, so it always
-  renders. The Settings badge shows whether live prices are active.
+- **Seeded fallback.** Without a sheet URL (or if a ticker shows `#N/A` / you're
+  offline), the app falls back to the sample prices in `src/data/catalog.js`, so it
+  always renders. The Settings badge shows whether live prices are active.
 
-Tickers are mapped to the right exchange in `src/market/symbols.js` (Canadian ETFs →
-TSX, US ETFs → US listing) and batched one request per exchange to stay well under
-the free-tier rate limit.
+Each asset's Google ticker (`TICKER:EXCHANGE`, e.g. `VFV:TSE`, `SPUS:NYSEARCA`) lives
+in `src/data/catalog.js` as `gfSymbol`; if Google reports `#N/A` for a row, fix that
+symbol in the sheet (or the catalog) — no other code changes needed.
 
 ## CSV format
 
@@ -84,9 +89,8 @@ src/
     compute.js         pure rebalance / valuation math (takes resolved assets + fx)
     csv.js             CSV import/export
   market/
-    symbols.js         ticker → exchange mapping + grouping
     cache.js           localStorage quote/FX cache with 24h TTL
-    twelveData.js      Twelve Data provider (batched quotes + FX)
+    googleSheets.js    Google Finance provider: parse a published-sheet CSV → quotes + FX
     useMarketData.js   hook: merge catalog + cache + live → { assets, fx, refresh, … }
   components/          icons + presentational UI (Card, Donut, TargetBar, …)
   views/               Overview, Portfolio, Data, Settings

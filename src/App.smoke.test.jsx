@@ -29,7 +29,7 @@ function withCtx(node, overrides = {}) {
     route: { name: 'overview' }, setRoute: () => {},
     tk: tokens('light'), ac: assetColor('light'),
     assets: seedAssets(), fx: { ...DEFAULT_FX },
-    market: { hasKey: false, loading: false, lastUpdated: null, fx: { ...DEFAULT_FX }, setApiKey: () => {}, refresh: () => {} },
+    market: { configured: false, sheetUrl: '', loading: false, lastUpdated: null, fx: { ...DEFAULT_FX }, setSheetUrl: () => {}, refresh: () => {} },
     ...overrides,
   };
   return renderToString(<AppCtx.Provider value={ctx}>{node}</AppCtx.Provider>);
