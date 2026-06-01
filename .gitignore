@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.DS_Store
+.vite
+npm-debug.log*
+
+# Stray design-handoff bundle download (kept out of the repo)
+E8AAnd71cBqYER88pKoRqw*
