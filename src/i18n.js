@@ -19,6 +19,7 @@ export const I18N = {
     csvFormat: 'Expected format', csvNote: 'Prices and currencies are fetched from market data by ticker.',
     parsed: 'Parsed', rowsFound: 'rows found', apply: 'Apply', cancel: 'Cancel', remove: 'Remove',
     portfolio: 'Portfolio', targetPct: 'Target %', totalTarget: 'Targets total', mustBe100: 'should be 100%',
+    globalTargets: 'Global targets', globalTargetsSub: 'Desired % of total net worth (all accounts combined)', ofNetWorth: 'of net worth',
     priceLive: 'live', currency: 'Currency', language: 'Language', theme: 'Theme', light: 'Light', dark: 'Dark',
     // market data / settings
     settings: 'Market data', apiKey: 'Google Sheet CSV URL', apiKeyPlaceholder: 'Paste your published sheet CSV URL',
@@ -49,6 +50,7 @@ export const I18N = {
     csvFormat: 'Format attendu', csvNote: 'Les cours et devises sont récupérés des données de marché par symbole.',
     parsed: 'Analysé', rowsFound: 'lignes trouvées', apply: 'Appliquer', cancel: 'Annuler', remove: 'Retirer',
     portfolio: 'Compte', targetPct: 'Cible %', totalTarget: 'Total des cibles', mustBe100: 'devrait être 100 %',
+    globalTargets: 'Cibles globales', globalTargetsSub: 'Pourcentage souhaité de la valeur nette totale (tous les comptes)', ofNetWorth: 'de la valeur nette',
     priceLive: 'direct', currency: 'Devise', language: 'Langue', theme: 'Thème', light: 'Clair', dark: 'Sombre',
     settings: 'Données de marché', apiKey: 'URL CSV de la feuille Google', apiKeyPlaceholder: "Collez l'URL CSV de votre feuille publiée",
     apiKeyHelp: "Collez le modèle ci-dessous dans la cellule A1 d'une nouvelle feuille Google, puis Données → Scinder le texte en colonnes → séparateur « | ». Publiez-la (Fichier → Partager → Publier sur le Web → CSV) et collez cette URL ici. L'URL est stockée uniquement dans ce navigateur. Ajoutez une ligne (ticker · nom · gfSymbol · classe · cours) pour suivre un nouvel actif.",

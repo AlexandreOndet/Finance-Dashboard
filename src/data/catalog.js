@@ -5,7 +5,9 @@
 // trading currency; `exchange` tells the market layer where to query
 // the ticker ('TSX' for Canadian listings, 'US' for US listings).
 // All portfolio math runs in a holding's native currency, converted at
-// display time. Targets are desired % of each portfolio. `gfSymbol` is the
+// display time. The target allocation is a single global map by ticker
+// (GLOBAL_TARGETS), desired % of total net worth — not per portfolio.
+// `gfSymbol` is the
 // GOOGLEFINANCE ticker (EXCHANGE:TICKER, e.g. TSE:VFV) the user puts in their
 // published Google Sheet — see sheetTemplate() and src/market/googleSheets.js.
 // ───────────────────────────────────────────────────────────────
@@ -41,15 +43,17 @@ export const isCash = (ticker) => CASH_TICKERS.includes(ticker);
 // Tickers the market layer may fetch (everything except cash).
 export const MARKET_TICKERS = Object.keys(ASSETS).filter((t) => !isCash(t));
 
-// Default portfolios = Canadian account types. holding: { ticker, shares, target% }
+// Default portfolios = Canadian account types. holding: { ticker, shares }
 export const DEFAULT_PORTFOLIOS = [
-  { id: 'tfsa',   type: 'TFSA',   holdings: [{ ticker: 'VFV', shares: 120, target: 60 }, { ticker: 'IBIT', shares: 85, target: 40 }] },
-  { id: 'rrsp',   type: 'RRSP',   holdings: [{ ticker: 'VOO', shares: 40, target: 70 }, { ticker: 'SPUS', shares: 138, target: 30 }] },
-  { id: 'fhsa',   type: 'FHSA',   holdings: [{ ticker: 'ETHXB', shares: 174, target: 40 }, { ticker: 'WSHR', shares: 65, target: 35 }, { ticker: 'ZJPN', shares: 33, target: 25 }] },
-  { id: 'nonreg', type: 'NONREG', holdings: [{ ticker: 'VFV', shares: 60, target: 50 }, { ticker: 'VOO', shares: 8, target: 50 }] },
+  { id: 'tfsa',   type: 'TFSA',   holdings: [{ ticker: 'VFV', shares: 120 }, { ticker: 'IBIT', shares: 85 }] },
+  { id: 'rrsp',   type: 'RRSP',   holdings: [{ ticker: 'VOO', shares: 40 }, { ticker: 'SPUS', shares: 138 }] },
+  { id: 'fhsa',   type: 'FHSA',   holdings: [{ ticker: 'ETHXB', shares: 174 }, { ticker: 'WSHR', shares: 65 }, { ticker: 'ZJPN', shares: 33 }] },
+  { id: 'nonreg', type: 'NONREG', holdings: [{ ticker: 'VFV', shares: 60 }, { ticker: 'VOO', shares: 8 }] },
 ];
 
-// Combined (all-accounts) target allocation by ticker.
+// The single global target allocation by ticker — desired % of total net
+// worth (sums to 100 across all accounts). Seed/default for the editable
+// `targets` state; the user edits it in the Data view.
 export const GLOBAL_TARGETS = { VOO: 35, VFV: 30, SPUS: 10, IBIT: 8, ETHXB: 7, WSHR: 5, ZJPN: 5 };
 
 export const ACCOUNT_ORDER = ['TFSA', 'RRSP', 'FHSA', 'NONREG'];

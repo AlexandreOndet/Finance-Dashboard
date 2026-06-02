@@ -53,13 +53,15 @@ come from market data by ticker, so they're **not** in the file. See
 [`sample-portfolio.csv`](./sample-portfolio.csv):
 
 ```csv
-portfolio,ticker,shares,target_pct
-TFSA,VFV,120,60
-TFSA,IBIT,85,40
+portfolio,ticker,shares
+TFSA,VFV,120
+TFSA,IBIT,85
 ```
 
-`portfolio` is the account type (`TFSA`, `RRSP`, `FHSA`, `NONREG`); `target_pct` is
-the desired weight of that holding within its account.
+`portfolio` is the account type (`TFSA`, `RRSP`, `FHSA`, `NONREG`). Target weights are
+**not** in the CSV: there's a single global target allocation (desired % of total net
+worth, summing to 100% across all accounts) that you edit in the Data view's "Global
+targets" section. A legacy `target_pct` column is accepted on import and ignored.
 
 ## Develop
 

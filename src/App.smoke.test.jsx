@@ -5,7 +5,7 @@ import { ViewPortfolio } from './views/Portfolio.jsx';
 import { ViewData } from './views/Data.jsx';
 import { AppCtx } from './context.jsx';
 import { tokens, assetColor } from './theme.js';
-import { DEFAULT_PORTFOLIOS, seedAssets, DEFAULT_FX } from './data/catalog.js';
+import { DEFAULT_PORTFOLIOS, GLOBAL_TARGETS, seedAssets, DEFAULT_FX } from './data/catalog.js';
 
 // Smoke test: render the whole tree server-side to catch import cycles,
 // undefined refs, and render-time crashes across every view.
@@ -26,6 +26,7 @@ function withCtx(node, overrides = {}) {
   const ctx = {
     mode: 'light', lang: 'en', disp: 'CAD',
     portfolios: DEFAULT_PORTFOLIOS, setPortfolios: () => {},
+    targets: { ...GLOBAL_TARGETS }, setTargets: () => {},
     route: { name: 'overview' }, setRoute: () => {},
     tk: tokens('light'), ac: assetColor('light'),
     assets: seedAssets(), fx: { ...DEFAULT_FX },

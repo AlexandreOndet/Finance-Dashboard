@@ -27,37 +27,47 @@ export const holdingValue = (h, disp, assets, fx) => toDisplay(holdingNative(h, 
 export const portfolioTotal = (p, disp, assets, fx) => p.holdings.reduce((s, h) => s + holdingValue(h, disp, assets, fx), 0);
 export const grandTotal = (ps, disp, assets, fx) => ps.reduce((s, p) => s + portfolioTotal(p, disp, assets, fx), 0);
 
-// Per-portfolio rebalance. Returns rows with current value/weight, target,
-// delta (display $, + buy / − sell) and sharesDelta (whole-ish units).
-export const rebalance = (p, disp, assets, fx) => {
+// Per-account display rows: current value + weight within the account.
+// Targets are global (net-worth level), so a single account has no target
+// of its own — this is purely informational (no delta/forecast).
+export const holdingsBreakdown = (p, disp, assets, fx) => {
   const total = portfolioTotal(p, disp, assets, fx);
   return p.holdings.map((h) => {
     const cur = holdingValue(h, disp, assets, fx);
-    const targetVal = (h.target / 100) * total;
-    const delta = targetVal - cur;
-    const price = priceOf(h.ticker, assets);
-    const deltaNative = toNative(delta, disp, curOf(h.ticker, assets), fx);
     return {
-      ticker: h.ticker, shares: h.shares, price,
+      ticker: h.ticker, shares: h.shares, price: priceOf(h.ticker, assets),
       cur, curPct: total ? (cur / total) * 100 : 0,
-      target: h.target, targetVal, delta,
-      driftPct: (total ? (cur / total) * 100 : 0) - h.target,
-      sharesDelta: price ? deltaNative / price : 0,
     };
   });
 };
 
-// Combined allocation across all portfolios, by ticker, vs global targets.
-export const globalAllocation = (ps, disp, assets, fx, globalTargets = GLOBAL_TARGETS) => {
+// Net-worth rebalance: aggregate every holding by ticker across all accounts
+// and compare to the single global target map. Returns rows with current
+// value/weight, target, delta (display $, + buy / − sell) and sharesDelta.
+// When targets sum to 100, Σ delta ≈ 0 (cash is conserved).
+export const globalRebalance = (ps, disp, assets, fx, targets = GLOBAL_TARGETS) => {
   const total = grandTotal(ps, disp, assets, fx);
-  const byTicker = {};
-  ps.forEach((p) => p.holdings.forEach((h) => { byTicker[h.ticker] = (byTicker[h.ticker] || 0) + holdingValue(h, disp, assets, fx); }));
-  return Object.keys(byTicker).map((t) => {
-    const val = byTicker[t];
-    const curPct = total ? (val / total) * 100 : 0;
-    const target = globalTargets[t] || 0;
-    return { ticker: t, val, curPct, target, driftPct: curPct - target };
-  }).sort((a, b) => b.val - a.val);
+  const byTicker = {}, sharesByTicker = {};
+  ps.forEach((p) => p.holdings.forEach((h) => {
+    byTicker[h.ticker] = (byTicker[h.ticker] || 0) + holdingValue(h, disp, assets, fx);
+    sharesByTicker[h.ticker] = (sharesByTicker[h.ticker] || 0) + h.shares;
+  }));
+  const tickers = [...new Set([...Object.keys(byTicker), ...Object.keys(targets || {})])];
+  return tickers.map((t) => {
+    const cur = byTicker[t] || 0;
+    const curPct = total ? (cur / total) * 100 : 0;
+    const target = (targets && targets[t]) || 0;
+    const targetVal = (target / 100) * total;
+    const delta = targetVal - cur;
+    const price = priceOf(t, assets);
+    const deltaNative = toNative(delta, disp, curOf(t, assets), fx);
+    return {
+      ticker: t, shares: sharesByTicker[t] || 0, price,
+      cur, curPct, target, targetVal, delta,
+      driftPct: curPct - target,
+      sharesDelta: price ? deltaNative / price : 0,
+    };
+  }).sort((a, b) => b.cur - a.cur);
 };
 
 export const dayChange = (p, disp, assets, fx) => {

@@ -120,18 +120,34 @@ Intentionally simple and hand-writable — prices are NOT in the file (they come
 market data by ticker). See `sample-portfolio.csv`:
 
 ```
-portfolio,ticker,shares,target_pct
+portfolio,ticker,shares
 ```
 
 `portfolio` is the account type (`TFSA`/`RRSP`/`FHSA`/`NONREG`). Import/export logic
-is in `src/data/csv.js`; it's tolerant of header order and whitespace.
+is in `src/data/csv.js`; it's tolerant of header order and whitespace. Targets are NOT
+in the CSV (see below); a legacy `target_pct` column is tolerated on import and ignored.
 
 **Uninvested cash** is recorded as a holding with the synthetic ticker `CASH_CAD` or
-`CASH_USD` (e.g. `NONREG,CASH_CAD,2000,0`). These are catalog assets priced at 1, so
+`CASH_USD` (e.g. `NONREG,CASH_CAD,2000`). These are catalog assets priced at 1, so
 the `shares` column is just the dollar amount in that currency. They carry
 `exchange: 'NONE'` and are excluded from the market layer via `MARKET_TICKERS` /
 `isCash()` in `catalog.js` — never quoted from the sheet. Everything else (totals,
 drift, rebalance, donut) treats cash as an ordinary holding.
+
+## Target allocation (global)
+
+There is **one** target allocation — a single `{ ticker → % }` map summing to 100% across
+**total net worth** (not per account). It lives in `App.jsx` state as `targets` (seeded from
+`GLOBAL_TARGETS` in `catalog.js`, persisted in `allocator-state-v1`), is edited in the Data
+view's "Global targets" section, and flows through context as `targets`/`setTargets`.
+
+The rebalance/trade engine is `compute.globalRebalance(ps, disp, assets, fx, targets)` — it
+aggregates every holding by ticker across all accounts and compares to `targets`; when targets
+total 100% the buy/sell deltas net to ~0. The **Overview** owns the forecast (a single
+net-worth trade blotter under its Forecast toggle) and the allocation-vs-target hero. The
+per-account page (`Portfolio.jsx`) is **informational only** — `compute.holdingsBreakdown`
+gives each position's value + weight within the account and its share of net worth; there are
+no per-account targets, drift, or forecast (and no per-account "must = 100%" check).
 
 ## i18n
 

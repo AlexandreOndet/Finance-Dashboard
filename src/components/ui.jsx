@@ -68,13 +68,14 @@ export function Donut({ rows, size = 230, stroke = 26, label, value }) {
   );
 }
 
-// thin track + actual fill + target tick
+// thin track + actual fill + optional target tick (omit `target` for a
+// plain weight bar, e.g. on the per-account view where targets are global)
 export function TargetBar({ actual, target, color, height = 6 }) {
   const { tk } = useApp();
   return (
     <div style={{ position: 'relative', height, background: tk.track, borderRadius: height / 2 }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.min(100, Math.max(0, actual)) + '%', background: color, borderRadius: height / 2 }} />
-      <div style={{ position: 'absolute', left: 'calc(' + Math.min(100, target) + '% - 1px)', top: -2, bottom: -2, width: 2, background: tk.ink, opacity: 0.5, borderRadius: 1 }} />
+      {target != null && <div style={{ position: 'absolute', left: 'calc(' + Math.min(100, target) + '% - 1px)', top: -2, bottom: -2, width: 2, background: tk.ink, opacity: 0.5, borderRadius: 1 }} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rebalance, grandTotal, portfolioTotal, holdingValue, toDisplay } from './compute.js';
+import { globalRebalance, holdingsBreakdown, grandTotal, portfolioTotal, holdingValue, toDisplay } from './compute.js';
 import { seedAssets, MARKET_TICKERS } from './catalog.js';
 
 // Minimal resolved-assets map + fx for deterministic math.
@@ -12,10 +12,11 @@ const fx = { CADperUSD: 1.4 };
 const p = {
   id: 'x', type: 'TFSA',
   holdings: [
-    { ticker: 'AAA', shares: 100, target: 50 }, // 1000 CAD
-    { ticker: 'USD1', shares: 5, target: 50 },   // 500 USD = 700 CAD
+    { ticker: 'AAA', shares: 100 }, // 1000 CAD
+    { ticker: 'USD1', shares: 5 },   // 500 USD = 700 CAD
   ],
 };
+const targets = { AAA: 50, USD1: 50 };
 
 describe('currency conversion', () => {
   it('converts USD holdings to CAD at the fx rate', () => {
@@ -27,23 +28,43 @@ describe('currency conversion', () => {
   });
 });
 
-describe('rebalance', () => {
-  it('conserves cash — sum of deltas is ~0 (full rebalance)', () => {
-    const rows = rebalance(p, 'CAD', assets, fx);
+describe('globalRebalance', () => {
+  it('conserves cash — sum of deltas is ~0 when targets total 100', () => {
+    const rows = globalRebalance([p], 'CAD', assets, fx, targets);
     const net = rows.reduce((s, r) => s + r.delta, 0);
     expect(net).toBeCloseTo(0, 6);
   });
   it('produces a sell for the over-weight asset and a buy for the under-weight one', () => {
-    const rows = rebalance(p, 'CAD', assets, fx);
+    const rows = globalRebalance([p], 'CAD', assets, fx, targets);
     const aaa = rows.find((r) => r.ticker === 'AAA');
     const usd = rows.find((r) => r.ticker === 'USD1');
     // total = 1700 CAD, target 50/50 = 850 each. AAA at 1000 is over → sell.
     expect(aaa.delta).toBeLessThan(0);
     expect(usd.delta).toBeGreaterThan(0);
   });
+  it('aggregates the same ticker held across multiple accounts into one row', () => {
+    const p2 = { id: 'y', type: 'RRSP', holdings: [{ ticker: 'AAA', shares: 50 }] }; // +500 CAD
+    const rows = globalRebalance([p, p2], 'CAD', assets, fx, targets);
+    const aaa = rows.filter((r) => r.ticker === 'AAA');
+    expect(aaa).toHaveLength(1);
+    expect(aaa[0].cur).toBeCloseTo(1500); // 1000 + 500
+    expect(aaa[0].shares).toBe(150);
+  });
   it('totals are display-currency consistent', () => {
     expect(portfolioTotal(p, 'CAD', assets, fx)).toBeCloseTo(1700);
     expect(grandTotal([p], 'CAD', assets, fx)).toBeCloseTo(1700);
+  });
+});
+
+describe('holdingsBreakdown', () => {
+  it('reports per-account value and weight (no target/delta), summing to ~100%', () => {
+    const rows = holdingsBreakdown(p, 'CAD', assets, fx);
+    expect(rows.reduce((s, r) => s + r.curPct, 0)).toBeCloseTo(100);
+    const aaa = rows.find((r) => r.ticker === 'AAA');
+    expect(aaa.cur).toBeCloseTo(1000);
+    expect(aaa.curPct).toBeCloseTo(1000 / 1700 * 100);
+    expect(aaa.target).toBeUndefined();
+    expect(aaa.delta).toBeUndefined();
   });
 });
 
@@ -62,13 +83,13 @@ describe('cash holdings', () => {
     expect(holdingValue({ ticker: 'CASH_USD', shares: 2000 }, 'CAD', seeded, fx)).toBeCloseTo(2000 * 1.4);
   });
 
-  it('rebalance treats a 0%-target cash holding as funds to deploy (negative delta)', () => {
+  it('globalRebalance treats a 0%-target cash holding as funds to deploy (negative delta)', () => {
     const seeded = seedAssets();
     const pc = { id: 'c', type: 'NONREG', holdings: [
-      { ticker: 'VFV', shares: 10, target: 100 },     // priced from seed catalog
-      { ticker: 'CASH_CAD', shares: 500, target: 0 }, // $500 to deploy
+      { ticker: 'VFV', shares: 10 },       // priced from seed catalog
+      { ticker: 'CASH_CAD', shares: 500 }, // $500 to deploy
     ] };
-    const rows = rebalance(pc, 'CAD', seeded, fx);
+    const rows = globalRebalance([pc], 'CAD', seeded, fx, { VFV: 100 }); // CASH_CAD target 0
     const cash = rows.find((r) => r.ticker === 'CASH_CAD');
     expect(cash.cur).toBeCloseTo(500);
     expect(cash.delta).toBeCloseTo(-500); // target 0 → deploy all of it

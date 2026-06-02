@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AppCtx, useApp } from './context.jsx';
 import { tokens, assetColor, FONTS } from './theme.js';
 import { t, acctLabel } from './i18n.js';
-import { DEFAULT_PORTFOLIOS } from './data/catalog.js';
+import { DEFAULT_PORTFOLIOS, GLOBAL_TARGETS } from './data/catalog.js';
 import { Icon } from './components/icons.jsx';
 import { Segmented } from './components/ui.jsx';
 import { useMarketData } from './market/useMarketData.js';
@@ -129,6 +129,7 @@ export default function App() {
   const [lang, setLang] = useState(saved.lang || ((navigator.language || 'en').toLowerCase().startsWith('fr') ? 'fr' : 'en'));
   const [disp, setDisp] = useState(saved.disp || 'CAD');
   const [portfolios, setPortfolios] = useState(saved.portfolios || JSON.parse(JSON.stringify(DEFAULT_PORTFOLIOS)));
+  const [targets, setTargets] = useState(saved.targets || { ...GLOBAL_TARGETS });
   const [route, setRoute] = useState(saved.route || { name: 'overview' });
 
   const tk = tokens(mode);
@@ -137,8 +138,8 @@ export default function App() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    try { localStorage.setItem(LS, JSON.stringify({ mode, lang, disp, portfolios, route })); } catch { /* noop */ }
-  }, [mode, lang, disp, portfolios, route]);
+    try { localStorage.setItem(LS, JSON.stringify({ mode, lang, disp, portfolios, targets, route })); } catch { /* noop */ }
+  }, [mode, lang, disp, portfolios, targets, route]);
   useEffect(() => {
     document.documentElement.style.background = tk.bg;
     document.body.style.background = tk.bg;
@@ -146,7 +147,7 @@ export default function App() {
   }, [tk.bg, mode]);
 
   const ctx = {
-    mode, setMode, lang, setLang, disp, setDisp, portfolios, setPortfolios, route, setRoute, tk, ac,
+    mode, setMode, lang, setLang, disp, setDisp, portfolios, setPortfolios, targets, setTargets, route, setRoute, tk, ac,
     assets: market.assets, fx: market.fx, market, isMobile,
   };
   return <AppCtx.Provider value={ctx}><Shell /></AppCtx.Provider>;

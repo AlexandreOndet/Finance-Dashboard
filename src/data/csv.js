@@ -1,15 +1,18 @@
-// ─── CSV: simple shape → portfolio,ticker,shares,target_pct ───
+// ─── CSV: simple shape → portfolio,ticker,shares ───
 // Prices/currencies are NOT in the CSV — they come from the catalog +
-// market-data layer by ticker. This keeps the import file something a
-// user can hand-write: which assets they hold and how many shares.
+// market-data layer by ticker. Target allocation is a single global map
+// (edited in the Data view, persisted in app state), so it isn't in the
+// CSV either. This keeps the import file something a user can hand-write:
+// which assets they hold and how many shares. A legacy `target_pct` column
+// is tolerated on import and simply ignored.
 import { ACCOUNT_ORDER } from './catalog.js';
 
-export const CSV_HEADER = 'portfolio,ticker,shares,target_pct';
+export const CSV_HEADER = 'portfolio,ticker,shares';
 
 export const portfoliosToCSV = (ps) => {
   const lines = [CSV_HEADER];
   ps.forEach((p) => p.holdings.forEach((h) => {
-    lines.push([p.type, h.ticker, h.shares, h.target].join(','));
+    lines.push([p.type, h.ticker, h.shares].join(','));
   }));
   return lines.join('\n');
 };
@@ -20,7 +23,7 @@ export const csvToPortfolios = (text) => {
   if (!rows.length) return { portfolios: [], errors: ['empty'] };
   const head = rows[0].toLowerCase().split(',').map((s) => s.trim());
   const ix = (n) => head.indexOf(n);
-  const ip = ix('portfolio'), it = ix('ticker'), is = ix('shares'), ig = ix('target_pct');
+  const ip = ix('portfolio'), it = ix('ticker'), is = ix('shares');
   const errors = [];
   if (ip < 0 || it < 0 || is < 0) errors.push('Missing required columns (portfolio, ticker, shares)');
   const map = {};
@@ -29,11 +32,10 @@ export const csvToPortfolios = (text) => {
     const type = (c[ip] || '').toUpperCase();
     const ticker = (c[it] || '').toUpperCase();
     const shares = parseFloat(c[is]);
-    const target = ig >= 0 ? parseFloat(c[ig]) : 0;
     if (!type || !ticker) { errors.push(`Row ${i + 2}: missing portfolio or ticker`); return; }
     if (!Number.isFinite(shares)) { errors.push(`Row ${i + 2}: invalid shares "${c[is]}"`); return; }
     if (!map[type]) map[type] = { id: type.toLowerCase(), type, holdings: [] };
-    map[type].holdings.push({ ticker, shares, target: Number.isFinite(target) ? target : 0 });
+    map[type].holdings.push({ ticker, shares });
   });
   const order = ACCOUNT_ORDER;
   const portfolios = Object.values(map).sort((a, b) => {
